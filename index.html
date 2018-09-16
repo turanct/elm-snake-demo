@@ -3,6 +3,28 @@
 
 <head>
     <title>Snake</title>
+
+    <style>
+    .wrapper div {
+        margin: 0;
+        padding: 0;
+        line-height: 0;
+    }
+    .wrapper .line {
+        display: block;
+    }
+    .wrapper .snake, .wrapper .field {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+    }
+    .wrapper .snake {
+        background-color: #ff6600;
+    }
+    .wrapper .field {
+        background-color: #33ff66;
+    }
+    </style>
 </head>
 
 <body>
@@ -12,7 +34,7 @@
 <script src="main.js"></script>
 <script>
     var node = document.getElementById('main');
-    var app = Elm.Main.embed(node);
+    var app = Elm.Main.init({node: node});
 </script>
 
 </body>

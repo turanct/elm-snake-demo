@@ -61,7 +61,7 @@ update msg model =
       , generateNewBait model
       )
     Change direction ->
-      ( { model | direction = direction }
+      ( changeDirection direction model
       , Cmd.none
       )
     NewBait bait ->
@@ -104,6 +104,14 @@ randomBait =
     (\x y -> {x = x, y = y})
     (Random.int 0 19)
     (Random.int 0 19)
+
+changeDirection : Direction-> Model -> Model
+changeDirection direction model =
+  case direction of
+    Up -> if model.direction == Down then model else { model | direction = Up }
+    Down -> if model.direction == Up then model else { model | direction = Down }
+    Right -> if model.direction == Left then model else { model | direction = Right }
+    Left -> if model.direction == Right then model else { model | direction = Left }
 
 
 -- VIEW

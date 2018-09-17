@@ -1,5 +1,5 @@
 import Browser
-import Html exposing (Html, div)
+import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
 import List exposing (head, take, length, range, concat, map, member, reverse, drop)
 import Time exposing (every)
@@ -30,55 +30,88 @@ type Direction = Up
                | Left
                | Right
 
-type alias Model =
+type alias Game =
   { snake : Snake
   , bait : Bait
   , direction: Direction
   }
 
-init : () -> (Model, Cmd Msg)
+type alias Score = Int
+
+type Status = NotPlaying
+            | Playing Game
+            | GameOver Score
+
+init : () -> (Status, Cmd Msg)
 init _ =
-  ( { snake = [ { x = 10, y = 10}, { x = 11, y = 10}, {x = 12, y = 10}, {x = 13, y = 10} ]
-    , bait = {x = 5, y = 5}
-    , direction = Left
-    }
+  ( NotPlaying
   , Cmd.none
   )
+
+newGame : Game
+newGame =
+  { snake = [ { x = 10, y = 10}, { x = 11, y = 10}, {x = 12, y = 10}, {x = 13, y = 10} ]
+  , bait = {x = 5, y = 5}
+  , direction = Left
+  }
 
 
 -- UPDATE
 
 type Msg
-  = Tick Time.Posix
+  = StartGame
+  | Tick Time.Posix
   | Change Direction
   | NewBait Bait
 
-update : Msg -> Model -> (Model, Cmd Msg)
-update msg model =
+update : Msg -> Status -> (Status, Cmd Msg)
+update msg status =
   case msg of
+    StartGame ->
+      ( Playing newGame
+      , Cmd.none
+      )
     Tick _ ->
-      ( move model
-      , generateNewBait model
-      )
+      case status of
+        Playing game ->
+          ( Playing (move game)
+          , generateNewBait game
+          )
+        _ ->
+          ( NotPlaying
+          , Cmd.none
+          )
     Change direction ->
-      ( changeDirection direction model
-      , Cmd.none
-      )
+      case status of
+        Playing game ->
+          ( Playing (changeDirection direction game)
+          , Cmd.none
+          )
+        _ ->
+          ( NotPlaying
+          , Cmd.none
+          )
     NewBait bait ->
-      ( { model | bait = bait }
-      , Cmd.none
-      )
+      case status of
+        Playing game ->
+          ( Playing { game | bait = bait }
+          , Cmd.none
+          )
+        _ ->
+          ( NotPlaying
+          , Cmd.none
+          )
 
-move : Model -> Model
-move model =
+move : Game -> Game
+move game =
   let
     oldHead =
-      case model.snake of
+      case game.snake of
         [] -> {x = 0, y = 0} -- shouldn't happen
         (x :: xs) -> x
 
     newHead =
-      case model.direction of
+      case game.direction of
         Up ->
           { oldHead | y = oldHead.y - 1 }
         Down ->
@@ -88,13 +121,13 @@ move model =
         Left ->
           { oldHead | x = oldHead.x - 1 }
 
-    movement = if (member model.bait model.snake) then 0 else 1
+    movement = if (member game.bait game.snake) then 0 else 1
   in
-  { model | snake = newHead :: take (length model.snake - movement) model.snake }
+  { game | snake = newHead :: take (length game.snake - movement) game.snake }
 
-generateNewBait : Model -> Cmd Msg
-generateNewBait model =
-  if (member model.bait model.snake)
+generateNewBait : Game -> Cmd Msg
+generateNewBait game =
+  if (member game.bait game.snake)
   then Random.generate NewBait randomBait
   else Cmd.none
 
@@ -105,22 +138,28 @@ randomBait =
     (Random.int 0 19)
     (Random.int 0 19)
 
-changeDirection : Direction-> Model -> Model
-changeDirection direction model =
+changeDirection : Direction-> Game -> Game
+changeDirection direction game =
   case direction of
-    Up -> if model.direction == Down then model else { model | direction = Up }
-    Down -> if model.direction == Up then model else { model | direction = Down }
-    Right -> if model.direction == Left then model else { model | direction = Right }
-    Left -> if model.direction == Right then model else { model | direction = Left }
+    Up -> if game.direction == Down then game else { game | direction = Up }
+    Down -> if game.direction == Up then game else { game | direction = Down }
+    Right -> if game.direction == Left then game else { game | direction = Right }
+    Left -> if game.direction == Right then game else { game | direction = Left }
 
 
 -- VIEW
 
-view : Model -> Html Msg
-view model =
-  div [ class "wrapper" ] (drawGrid model)
+view : Status -> Html Msg
+view status =
+  case status of
+    NotPlaying ->
+      div [ class "wrapper" ] [ text "press any key to start" ]
+    Playing game ->
+      div [ class "wrapper" ] (drawGrid game)
+    GameOver score ->
+      div [ class "wrapper" ] [ text "game over" ]
 
-drawGrid : Model -> List (Html Msg)
+drawGrid : Game -> List (Html Msg)
 drawGrid model =
   let
     fields =
@@ -161,15 +200,19 @@ emptyGrid min max =
 
 -- SUBSCRIPTIONS
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-  Sub.batch
-    [ every 150 Tick
-    , onKeyDown keyDecoder
-    ]
+subscriptions : Status -> Sub Msg
+subscriptions status =
+  case status of
+    Playing game ->
+      Sub.batch
+        [ every 100 Tick
+        , onKeyDown movementKeyDecoder
+        ]
+    _ ->
+      onKeyDown (Decode.map (\x -> StartGame) (Decode.field "key" Decode.string))
 
-keyDecoder : Decode.Decoder Msg
-keyDecoder =
+movementKeyDecoder : Decode.Decoder Msg
+movementKeyDecoder =
   Decode.map toDirection (Decode.field "key" Decode.string)
 
 toDirection : String -> Msg

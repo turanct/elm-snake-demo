@@ -1,6 +1,7 @@
 import Browser
-import Html exposing (Html, div, h1, text)
+import Html exposing (Html, div, h1, h2, button, text)
 import Html.Attributes exposing (class)
+import Html.Events exposing (onClick)
 import List exposing (head, take, length, range, concat, map, member, reverse, drop)
 import Time exposing (every)
 import Json.Decode as Decode
@@ -174,11 +175,17 @@ view : Status -> Html Msg
 view status =
   case status of
     NotPlaying ->
-      div [ class "not-playing" ] [ text "press any key to start" ]
+      div [ class "not-playing" ] [ h1 [] [ text "Snake" ]
+                                  , button [ onClick StartGame] [ text "Start Game" ]
+                                  ]
     Playing game ->
       div [ class "game" ] (drawGrid game)
     GameOver score ->
-      div [ class "game-over" ] [ text "game over", h1 [] [text (String.fromInt score)], text "points"]
+      div [ class "game-over" ] [ h1 [] [ text "Game Over" ]
+                                , h2 [] [text (String.fromInt score) ]
+                                , text "points"
+                                , div [] [ button [ onClick StartGame] [ text "Try Again" ] ]
+                                ]
 
 drawGrid : Game -> List (Html Msg)
 drawGrid model =
@@ -230,7 +237,7 @@ subscriptions status =
         , onKeyDown movementKeyDecoder
         ]
     _ ->
-      onKeyDown (Decode.map (\x -> StartGame) (Decode.field "key" Decode.string))
+      Sub.none
 
 movementKeyDecoder : Decode.Decoder Msg
 movementKeyDecoder =

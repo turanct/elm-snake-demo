@@ -81,8 +81,13 @@ move model =
           { oldHead | x = oldHead.x + 1 }
         Left ->
           { oldHead | x = oldHead.x - 1 }
+
+    movement = if (member model.bait model.snake) then 0 else 1
+
+    newBait = if (member model.bait model.snake) then {x = 8, y = 8} else model.bait
+    -- todo make this new bait random
   in
-  { model | snake = newHead :: take (length model.snake - 1) model.snake}
+  { model | snake = newHead :: take (length model.snake - movement) model.snake, bait = newBait }
 
 
 -- VIEW

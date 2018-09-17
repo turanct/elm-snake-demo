@@ -77,7 +77,7 @@ update msg status =
     Tick _ ->
       case status of
         Playing game ->
-          ( status |> move |> preventDeath
+          ( status |> move |> preventDeath |> preventEscape
           , generateNewBait game
           )
         _ -> ( NotPlaying , Cmd.none)
@@ -131,6 +131,18 @@ preventDeath status =
           if member snakeHead snakeTail
           then GameOver (length game.snake)
           else status
+        _ -> status
+    _ -> status
+
+preventEscape : Status -> Status
+preventEscape status =
+  case status of
+    Playing game ->
+      case game.snake of
+        (snakeHead :: snakeTail) ->
+          if member snakeHead (emptyGrid 0 (gridSize - 1))
+          then status
+          else GameOver (length game.snake)
         _ -> status
     _ -> status
 

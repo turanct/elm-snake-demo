@@ -37,7 +37,7 @@ type alias Model =
 
 init : () -> (Model, Cmd Msg)
 init _ =
-  ( { snake = [ { x = 0, y = 0}, { x = 1, y = 0}, {x = 2, y = 0}, {x = 3, y = 0} ]
+  ( { snake = [ { x = 10, y = 10}, { x = 11, y = 10}, {x = 12, y = 10}, {x = 13, y = 10} ]
     , bait = {x = 5, y = 5}
     , direction = Left
     }

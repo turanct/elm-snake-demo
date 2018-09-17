@@ -1,5 +1,5 @@
 import Browser
-import Html exposing (Html, div, text)
+import Html exposing (Html, div, h1, text)
 import Html.Attributes exposing (class)
 import List exposing (head, take, length, range, concat, map, member, reverse, drop)
 import Time exposing (every)
@@ -55,6 +55,9 @@ newGame =
   , direction = Left
   }
 
+gridSize : Int
+gridSize = 20
+
 
 -- UPDATE
 
@@ -74,56 +77,62 @@ update msg status =
     Tick _ ->
       case status of
         Playing game ->
-          ( Playing (move game)
+          ( status |> move |> preventDeath
           , generateNewBait game
           )
-        _ ->
-          ( NotPlaying
-          , Cmd.none
-          )
+        _ -> ( NotPlaying , Cmd.none)
     Change direction ->
       case status of
         Playing game ->
           ( Playing (changeDirection direction game)
           , Cmd.none
           )
-        _ ->
-          ( NotPlaying
-          , Cmd.none
-          )
+        _ -> ( NotPlaying , Cmd.none)
     NewBait bait ->
       case status of
         Playing game ->
           ( Playing { game | bait = bait }
           , Cmd.none
           )
-        _ ->
-          ( NotPlaying
-          , Cmd.none
-          )
+        other -> ( other , Cmd.none)
 
-move : Game -> Game
-move game =
-  let
-    oldHead =
+move : Status -> Status
+move status =
+  case status of
+    Playing game ->
+      let
+        oldHead =
+          case game.snake of
+            [] -> {x = 0, y = 0} -- shouldn't happen
+            (x :: xs) -> x
+
+        newHead =
+          case game.direction of
+            Up ->
+              { oldHead | y = oldHead.y - 1 }
+            Down ->
+              { oldHead | y = oldHead.y + 1 }
+            Right ->
+              { oldHead | x = oldHead.x + 1 }
+            Left ->
+              { oldHead | x = oldHead.x - 1 }
+
+        movement = if (member game.bait game.snake) then 0 else 1
+      in
+      Playing { game | snake = newHead :: take (length game.snake - movement) game.snake }
+    _ -> status
+
+preventDeath : Status -> Status
+preventDeath status =
+  case status of
+    Playing game ->
       case game.snake of
-        [] -> {x = 0, y = 0} -- shouldn't happen
-        (x :: xs) -> x
-
-    newHead =
-      case game.direction of
-        Up ->
-          { oldHead | y = oldHead.y - 1 }
-        Down ->
-          { oldHead | y = oldHead.y + 1 }
-        Right ->
-          { oldHead | x = oldHead.x + 1 }
-        Left ->
-          { oldHead | x = oldHead.x - 1 }
-
-    movement = if (member game.bait game.snake) then 0 else 1
-  in
-  { game | snake = newHead :: take (length game.snake - movement) game.snake }
+        (snakeHead :: snakeTail) ->
+          if member snakeHead snakeTail
+          then GameOver (length game.snake)
+          else status
+        _ -> status
+    _ -> status
 
 generateNewBait : Game -> Cmd Msg
 generateNewBait game =
@@ -135,8 +144,8 @@ randomBait : Random.Generator Bait
 randomBait =
   Random.map2
     (\x y -> {x = x, y = y})
-    (Random.int 0 19)
-    (Random.int 0 19)
+    (Random.int 0 (gridSize - 1))
+    (Random.int 0 (gridSize - 1))
 
 changeDirection : Direction-> Game -> Game
 changeDirection direction game =
@@ -153,11 +162,11 @@ view : Status -> Html Msg
 view status =
   case status of
     NotPlaying ->
-      div [ class "wrapper" ] [ text "press any key to start" ]
+      div [ class "not-playing" ] [ text "press any key to start" ]
     Playing game ->
-      div [ class "wrapper" ] (drawGrid game)
+      div [ class "game" ] (drawGrid game)
     GameOver score ->
-      div [ class "wrapper" ] [ text "game over" ]
+      div [ class "game-over" ] [ text "game over", h1 [] [text (String.fromInt score)], text "points"]
 
 drawGrid : Game -> List (Html Msg)
 drawGrid model =
@@ -177,7 +186,7 @@ lines2 =
   \l f ->
     case f of
       [] -> reverse l
-      _ -> lines2 ((take 20 f) :: l) (drop 20 f)
+      _ -> lines2 ((take gridSize f) :: l) (drop gridSize f)
 
 renderGrid : Snake -> Bait -> List (Coordinate, Bool)
 renderGrid snake bait =
@@ -187,7 +196,7 @@ renderGrid snake bait =
         filled = (member c snake) || c == bait
       in
       (c, filled))
-    (emptyGrid 0 19)
+    (emptyGrid 0 (gridSize - 1))
 
 emptyGrid : Int -> Int -> List Coordinate
 emptyGrid min max =

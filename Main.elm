@@ -5,6 +5,7 @@ import List exposing (head, take, length, range, concat, map, member, reverse, d
 import Time exposing (every)
 import Json.Decode as Decode
 import Browser.Events exposing (onKeyDown)
+import Random
 
 
 main =
@@ -50,16 +51,21 @@ init _ =
 type Msg
   = Tick Time.Posix
   | Change Direction
+  | NewBait Bait
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     Tick _ ->
       ( move model
-      , Cmd.none
+      , generateNewBait model
       )
     Change direction ->
       ( { model | direction = direction }
+      , Cmd.none
+      )
+    NewBait bait ->
+      ( { model | bait = bait }
       , Cmd.none
       )
 
@@ -83,11 +89,21 @@ move model =
           { oldHead | x = oldHead.x - 1 }
 
     movement = if (member model.bait model.snake) then 0 else 1
-
-    newBait = if (member model.bait model.snake) then {x = 8, y = 8} else model.bait
-    -- todo make this new bait random
   in
-  { model | snake = newHead :: take (length model.snake - movement) model.snake, bait = newBait }
+  { model | snake = newHead :: take (length model.snake - movement) model.snake }
+
+generateNewBait : Model -> Cmd Msg
+generateNewBait model =
+  if (member model.bait model.snake)
+  then Random.generate NewBait randomBait
+  else Cmd.none
+
+randomBait : Random.Generator Bait
+randomBait =
+  Random.map2
+    (\x y -> {x = x, y = y})
+    (Random.int 0 19)
+    (Random.int 0 19)
 
 
 -- VIEW

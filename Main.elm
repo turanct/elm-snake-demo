@@ -51,7 +51,7 @@ init _ =
 
 newGame : Game
 newGame =
-  { snake = [ { x = 10, y = 10}, { x = 11, y = 10}, {x = 12, y = 10}, {x = 13, y = 10} ]
+  { snake = [ {x = 10, y = 10}, {x = 11, y = 10}, {x = 12, y = 10}, {x = 13, y = 10} ]
   , bait = {x = 5, y = 5}
   , direction = Left
   }
@@ -82,22 +82,22 @@ update msg status =
           ( status |> move |> preventDeath |> preventEscape
           , generateNewBait game
           )
-        _ -> ( NotPlaying , Cmd.none)
+        _ -> (NotPlaying , Cmd.none)
     Change direction ->
       case status of
         Playing game ->
           ( Playing (changeDirection direction game)
           , Cmd.none
           )
-        _ -> ( NotPlaying , Cmd.none)
+        _ -> (NotPlaying , Cmd.none)
     NewBait bait ->
       case status of
         Playing game ->
           ( Playing { game | bait = bait }
           , Cmd.none
           )
-        other -> ( other , Cmd.none)
-    DoNothing -> ( status , Cmd.none)
+        other -> (other , Cmd.none)
+    DoNothing -> (status , Cmd.none)
 
 move : Status -> Status
 move status =
@@ -162,7 +162,7 @@ randomBait =
     (Random.int 0 (gridSize - 1))
     (Random.int 0 (gridSize - 1))
 
-changeDirection : Direction-> Game -> Game
+changeDirection : Direction -> Game -> Game
 changeDirection direction game =
   case direction of
     Up -> if game.direction == Down then game else { game | direction = Up }
@@ -197,7 +197,7 @@ drawGrid model =
         (\(coord, bool) ->
           div [ class (if bool == True then "snake" else "field") ] [])
         (renderGrid model.snake model.bait)
-    drawLines = map (\l -> div [ class "line"] l)
+    drawLines = map (\l -> div [ class "line" ] l)
   in
   fields |> lines |> drawLines
 

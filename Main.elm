@@ -178,16 +178,16 @@ view status =
   case status of
     NotPlaying ->
       div [ class "not-playing" ] [ h1 [] [ text "Snake" ]
-                                  , button [ onClick StartGame] [ text "Start Game" ]
+                                  , div [] [ button [ onClick StartGame ] [ text "Start Game" ] ]
                                   ]
-    Playing game ->
-      div [ class "game" ] (drawGrid game)
     GameOver score ->
       div [ class "game-over" ] [ h1 [] [ text "Game Over" ]
-                                , h2 [] [text (String.fromInt score) ]
-                                , text "points"
-                                , div [] [ button [ onClick StartGame] [ text "Try Again" ] ]
+                                , h2 [] [ text (String.fromInt score) ]
+                                , div [] [ text "points" ]
+                                , div [] [ button [ onClick StartGame ] [ text "Try Again" ] ]
                                 ]
+    Playing game ->
+      div [ class "game" ] (drawGrid game)
 
 drawGrid : Game -> List (Html Msg)
 drawGrid model =

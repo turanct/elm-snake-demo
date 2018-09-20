@@ -57,7 +57,7 @@ newGame =
   }
 
 gridSize : Int
-gridSize = 20
+gridSize = 15
 
 
 -- UPDATE

@@ -67,6 +67,7 @@ type Msg
   | Tick Time.Posix
   | Change Direction
   | NewBait Bait
+  | DoNothing
 
 update : Msg -> Status -> (Status, Cmd Msg)
 update msg status =
@@ -96,6 +97,7 @@ update msg status =
           , Cmd.none
           )
         other -> ( other , Cmd.none)
+    DoNothing -> ( status , Cmd.none)
 
 move : Status -> Status
 move status =
@@ -255,4 +257,4 @@ toDirection string =
     "ArrowLeft" ->
       Change Left
     _ ->
-      Change Left
+      DoNothing

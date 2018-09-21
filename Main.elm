@@ -35,6 +35,7 @@ type alias Game =
   { snake : Snake
   , bait : Bait
   , direction: Direction
+  , nextDirection: List Direction
   }
 
 type alias Score = Int
@@ -54,6 +55,7 @@ newGame =
   { snake = [ {x = 10, y = 10}, {x = 11, y = 10}, {x = 12, y = 10}, {x = 13, y = 10} ]
   , bait = {x = 5, y = 5}
   , direction = Left
+  , nextDirection = []
   }
 
 gridSize : Int
@@ -104,13 +106,17 @@ move status =
   case status of
     Playing game ->
       let
+        newDirection = case game.nextDirection of
+          (x :: xs) -> x
+          _ -> game.direction
+
         oldHead =
           case game.snake of
             [] -> {x = 0, y = 0} -- shouldn't happen
             (x :: xs) -> x
 
         newHead =
-          case game.direction of
+          case newDirection of
             Up ->
               { oldHead | y = oldHead.y - 1 }
             Down ->
@@ -121,8 +127,12 @@ move status =
               { oldHead | x = oldHead.x - 1 }
 
         movement = if (member game.bait game.snake) then 0 else 1
+
       in
-      Playing { game | snake = newHead :: take (length game.snake - movement) game.snake }
+      Playing { game | snake = newHead :: take (length game.snake - movement) game.snake
+                     , direction = newDirection
+                     , nextDirection = []
+                     }
     _ -> status
 
 preventDeath : Status -> Status
@@ -165,10 +175,10 @@ randomBait =
 changeDirection : Direction -> Game -> Game
 changeDirection direction game =
   case direction of
-    Up -> if game.direction == Down then game else { game | direction = Up }
-    Down -> if game.direction == Up then game else { game | direction = Down }
-    Right -> if game.direction == Left then game else { game | direction = Right }
-    Left -> if game.direction == Right then game else { game | direction = Left }
+    Up -> if game.direction == Down then game else { game | nextDirection = [Up] }
+    Down -> if game.direction == Up then game else { game | nextDirection = [Down] }
+    Right -> if game.direction == Left then game else { game | nextDirection = [Right] }
+    Left -> if game.direction == Right then game else { game | nextDirection = [Left] }
 
 
 -- VIEW

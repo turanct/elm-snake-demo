@@ -8,6 +8,7 @@ import Json.Decode as Decode
 import Browser.Events exposing (onKeyDown)
 import Random
 
+-- https://ellie-app.com/3pwCCD723rTa1
 
 main =
   Browser.element
@@ -35,7 +36,6 @@ type alias Game =
   { snake : Snake
   , bait : Bait
   , direction: Direction
-  , nextDirection: List Direction
   }
 
 type alias Score = Int
@@ -55,7 +55,6 @@ newGame =
   { snake = [ {x = 10, y = 10}, {x = 11, y = 10}, {x = 12, y = 10}, {x = 13, y = 10} ]
   , bait = {x = 5, y = 5}
   , direction = Left
-  , nextDirection = []
   }
 
 gridSize : Int
@@ -74,111 +73,8 @@ type Msg
 update : Msg -> Status -> (Status, Cmd Msg)
 update msg status =
   case msg of
-    StartGame ->
-      ( Playing newGame
-      , Cmd.none
-      )
-    Tick _ ->
-      case status of
-        Playing game ->
-          ( status |> move |> preventDeath |> preventEscape
-          , generateNewBait game
-          )
-        _ -> (NotPlaying , Cmd.none)
-    Change direction ->
-      case status of
-        Playing game ->
-          ( Playing (changeDirection direction game)
-          , Cmd.none
-          )
-        _ -> (NotPlaying , Cmd.none)
-    NewBait bait ->
-      case status of
-        Playing game ->
-          ( Playing { game | bait = bait }
-          , Cmd.none
-          )
-        other -> (other , Cmd.none)
-    DoNothing -> (status , Cmd.none)
+    _ -> (status , Cmd.none)
 
-move : Status -> Status
-move status =
-  case status of
-    Playing game ->
-      let
-        newDirection = case game.nextDirection of
-          (x :: xs) -> x
-          _ -> game.direction
-
-        oldHead =
-          case game.snake of
-            [] -> {x = 0, y = 0} -- shouldn't happen
-            (x :: xs) -> x
-
-        newHead =
-          case newDirection of
-            Up ->
-              { oldHead | y = oldHead.y - 1 }
-            Down ->
-              { oldHead | y = oldHead.y + 1 }
-            Right ->
-              { oldHead | x = oldHead.x + 1 }
-            Left ->
-              { oldHead | x = oldHead.x - 1 }
-
-        movement = if (member game.bait game.snake) then 0 else 1
-
-      in
-      Playing { game | snake = newHead :: take (length game.snake - movement) game.snake
-                     , direction = newDirection
-                     , nextDirection = []
-                     }
-    _ -> status
-
-preventDeath : Status -> Status
-preventDeath status =
-  case status of
-    Playing game ->
-      case game.snake of
-        (snakeHead :: snakeTail) ->
-          if member snakeHead snakeTail
-          then GameOver (length game.snake)
-          else status
-        _ -> status
-    _ -> status
-
-preventEscape : Status -> Status
-preventEscape status =
-  case status of
-    Playing game ->
-      case game.snake of
-        (snakeHead :: snakeTail) ->
-          if member snakeHead (emptyGrid 0 (gridSize - 1))
-          then status
-          else GameOver (length game.snake)
-        _ -> status
-    _ -> status
-
-generateNewBait : Game -> Cmd Msg
-generateNewBait game =
-  if (member game.bait game.snake)
-  then Random.generate NewBait randomBait
-  else Cmd.none
-
-randomBait : Random.Generator Bait
-randomBait =
-  Random.map2
-    (\x y -> {x = x, y = y})
-    (Random.int 0 (gridSize - 1))
-    (Random.int 0 (gridSize - 1))
-
-changeDirection : Direction -> Game -> Game
-changeDirection direction game =
-  case direction of
-    Up -> if game.direction == Down then game else { game | nextDirection = [Up] }
-    Down -> if game.direction == Up then game else { game | nextDirection = [Down] }
-    Right -> if game.direction == Left then game else { game | nextDirection = [Right] }
-    Left -> if game.direction == Right then game else { game | nextDirection = [Left] }
 
 
 -- VIEW

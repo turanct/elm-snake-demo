@@ -3,6 +3,7 @@ import Html exposing (Html, div, h1, h2, button, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import List exposing (head, take, length, range, concat, map, member, reverse, drop)
+import List.Extra exposing (dropWhile)
 import Time exposing (every)
 import Json.Decode as Decode
 import Browser.Events exposing (onKeyDown)
@@ -35,7 +36,7 @@ type alias Game =
   { snake : Snake
   , bait : Bait
   , direction: Direction
-  , nextDirection: List Direction
+  , nextDirections: List Direction
   }
 
 type alias Score = Int
@@ -55,7 +56,7 @@ newGame =
   { snake = [ {x = 10, y = 10}, {x = 11, y = 10}, {x = 12, y = 10}, {x = 13, y = 10} ]
   , bait = {x = 5, y = 5}
   , direction = Left
-  , nextDirection = []
+  , nextDirections = []
   }
 
 gridSize : Int
@@ -106,9 +107,20 @@ move status =
   case status of
     Playing game ->
       let
-        newDirection = case game.nextDirection of
+        opposite a b =
+          case a of
+            Up -> b == Down
+            Down -> b == Up
+            Right -> b == Left
+            Left -> b == Right
+
+        newDirection = case dropWhile (opposite game.direction) game.nextDirections of
           (x :: xs) -> x
           _ -> game.direction
+
+        nextDirections = case dropWhile (opposite game.direction) game.nextDirections of
+          (x :: xs) -> xs
+          _ -> []
 
         oldHead =
           case game.snake of
@@ -131,7 +143,7 @@ move status =
       in
       Playing { game | snake = newHead :: take (length game.snake - movement) game.snake
                      , direction = newDirection
-                     , nextDirection = []
+                     , nextDirections = nextDirections
                      }
     _ -> status
 
@@ -174,11 +186,9 @@ randomBait =
 
 changeDirection : Direction -> Game -> Game
 changeDirection direction game =
-  case direction of
-    Up -> if game.direction == Down then game else { game | nextDirection = [Up] }
-    Down -> if game.direction == Up then game else { game | nextDirection = [Down] }
-    Right -> if game.direction == Left then game else { game | nextDirection = [Right] }
-    Left -> if game.direction == Right then game else { game | nextDirection = [Left] }
+  let
+    appendEnd x xs = reverse (x :: reverse xs)
+  in { game | nextDirections = appendEnd direction game.nextDirections }
 
 
 -- VIEW
